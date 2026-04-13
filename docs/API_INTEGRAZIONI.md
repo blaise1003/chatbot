@@ -136,7 +136,7 @@ Quando Claude include la chiave `"Keyword search"` nella risposta JSON, il backe
 
 **Endpoint di default:**
 ```
-https://eu1-search.doofinder.com/6/1df6a9e0beefea8b4faa2986d514b197/_search
+https://eu1-search.doofinder.com/6/xxxxxxxxxxxxxxxxxxxxx/_search
 ```
 
 Il percorso contiene: `{zona}-search.doofinder.com/{versione}/{hash_indice}/_search`.  
