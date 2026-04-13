@@ -14,6 +14,7 @@ define('CHATBOT_WIDGET_DYNAMIC_SECRET', CHATBOT_WIDGET_TOKEN);
 define('CHATBOT_WIDGET_TOKEN_PREFIX', 'pfw1');
 define('CHATBOT_WIDGET_TOKEN_MAX_FUTURE_SECONDS', 86400);
 define('CHATBOT_WIDGET_ALLOW_STATIC_TOKEN_FALLBACK', true);
+define('CHATBOT_INCLUDE_RESPONSE_HISTORY', true);
 
 // ============================================================
 // Layer 1 — Redis (opzionale, disabilitato se l'estensione manca)

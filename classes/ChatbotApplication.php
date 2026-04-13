@@ -22,7 +22,7 @@ class ChatbotApplication
         ProductSearchService $productSearchService,
         OrderService $orderService,
         HtmlSanitizer $htmlSanitizer,
-        TrafficLimiter $trafficLimiter = null
+        ?TrafficLimiter $trafficLimiter = null
     ) {
         $this->requestGuard = $requestGuard;
         $this->sessionManager = $sessionManager;
@@ -79,11 +79,22 @@ class ChatbotApplication
 
 		// Se ask_claude ha ritornato un errore HTTP non recuperabile, rispondi subito
 		if (isset($parsed['_ok']) && $parsed['_ok'] === false) {
-			// Salva comunque la sessione per non perdere il messaggio utente
-			echo json_encode([
-				"reply"   => $parsed['reply'],
-				"options" => []
-			], JSON_UNESCAPED_UNICODE);
+            // Salva la sessione anche in errore AI per non perdere il messaggio utente
+            $errorReply = isset($parsed['reply']) && is_string($parsed['reply'])
+                ? $this->htmlSanitizer->sanitize($parsed['reply'])
+                : 'Servizio temporaneamente non disponibile. Riprova tra poco.';
+            $history[] = ['role' => 'assistant', 'content' => json_encode(['reply' => $errorReply], JSON_UNESCAPED_UNICODE)];
+            $this->sessionManager->saveHistory($sessionId, $history, $customerId);
+
+            $response = [
+                'reply' => $errorReply,
+                'options' => []
+            ];
+            if ($this->shouldIncludeHistoryInResponse()) {
+                $response['history'] = $history;
+            }
+
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
 			exit;
 		}
 
@@ -91,7 +102,9 @@ class ChatbotApplication
         $parsed = $this->processActions($history, $parsed, $customerSessionId, $testMode);
         $parsed = $this->sanitizeParsedResponse($parsed);
 
-		// Risposta finale in memoria, ora salva la cronologia con la risposta e rispondi al client
+        $responseOptions = isset($parsed['options']) && is_array($parsed['options']) ? $parsed['options'] : [];
+
+        // Risposta finale in memoria, ora salva la cronologia con la risposta e rispondi al client
         $history[] = ['role' => 'assistant', 'content' => json_encode($parsed, JSON_UNESCAPED_UNICODE)];
 
 		// Limita cronologia a 40 messaggi
@@ -106,15 +119,19 @@ class ChatbotApplication
         // MySQL flush: event-driven triggers
         if ($this->orderFoundInThisRequest) {
             $this->sessionManager->flushToDatabase($sessionId, $history, $customerId, 'order_found');
-        } elseif (isset($parsed['options']) && is_array($parsed['options']) && count($parsed['options']) === 0) {
+        } elseif (count($responseOptions) === 0) {
             $this->sessionManager->flushToDatabase($sessionId, $history, $customerId, 'conversation_end');
         }
-		
-        echo json_encode([
+
+		$response = [
             'reply' => isset($parsed['reply']) ? $parsed['reply'] : 'Ehm, non ho capito bene. Puoi ripetere? ??',
-            'options' => $parsed,
-			'history' => $history
-        ], JSON_UNESCAPED_UNICODE);
+			'options' => $responseOptions
+		];
+		if ($this->shouldIncludeHistoryInResponse()) {
+			$response['history'] = $history;
+		}
+
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
     }
 
     private function sanitizeSessionId($sessionId)
@@ -245,7 +262,9 @@ class ChatbotApplication
 			$customerEmail = $this->orderService->findLatestEmailInHistory($history);
 		}
 
-        if (!$testMode && $customerEmail === null) {
+        $customerEmail = is_string($customerEmail) ? trim($customerEmail) : '';
+
+        if (!$testMode && ($customerEmail === '' || filter_var($customerEmail, FILTER_VALIDATE_EMAIL) === false)) {
 			Logger::logDebug("buildOrderSystemUpdate", "Nessuna email valida trovata nella cronologia per sessione $customerSession. Impossibile procedere con recupero ordine $orderId."); // DEBUG LOG
             return 'Non eseguire il recupero ordine: manca un\'email valida nella conversazione. Chiedi all\'utente di fornire anche l\'email associata all\'ordine.';
         }
@@ -269,5 +288,10 @@ class ChatbotApplication
 
     private function getSystemPrompt() {
         return AI_PROMPT;
+    }
+
+    private function shouldIncludeHistoryInResponse()
+    {
+        return defined('CHATBOT_INCLUDE_RESPONSE_HISTORY') && CHATBOT_INCLUDE_RESPONSE_HISTORY;
     }
 }
