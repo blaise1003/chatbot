@@ -4,6 +4,7 @@
 
 .redis-dump-table td {
     vertical-align: top;
+	overflow: auto;
 }
 
 .redis-dump-table .redis-value-pre {

@@ -35,6 +35,13 @@ function admin_menu_groups(): array
                     'description' => 'Diagnostica Redis, TTL e rate limit.',
                     'enabled' => true,
                 ],
+                [
+                    'id' => 'load-test',
+                    'label' => 'Load Test',
+                    'href' => 'load_test.php',
+                    'description' => 'Simula traffico concorrente e verifica rate limit.',
+                    'enabled' => true,
+                ],
             ],
         ],
         [

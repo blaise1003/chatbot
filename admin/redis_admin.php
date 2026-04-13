@@ -29,7 +29,7 @@ use Chatbot\RedisStorage;
 $host = defined('CHATBOT_REDIS_HOST') ? (string) CHATBOT_REDIS_HOST : '127.0.0.1';
 $port = defined('CHATBOT_REDIS_PORT') ? (int) CHATBOT_REDIS_PORT : 6379;
 $password = defined('CHATBOT_REDIS_PASSWORD') ? (string) CHATBOT_REDIS_PASSWORD : '';
-$prefix = defined('CHATBOT_REDIS_PREFIX') ? (string) CHATBOT_REDIS_PREFIX : 'chatbot:';
+$prefix = defined('CHATBOT_REDIS_PREFIX') ? (string) CHATBOT_REDIS_PREFIX : 'prezzy:';
 $ttl = defined('CHATBOT_REDIS_TTL') ? (int) CHATBOT_REDIS_TTL : 3600;
 
 $demoSessionId = 'demo_session_redis';
@@ -188,7 +188,7 @@ if ($storageAvailable) {
 					$encoded = '[Impossibile serializzare il valore]';
 				}
 
-				$isSessionKey = strpos($key, $prefix . 'sess:') === 0;
+				$isSessionKey = strpos($key, 'prezzy:sess:') === 0;
 				$historyRows = [];
 				if ($isSessionKey && is_array($value)) {
 					foreach ($value as $row) {
@@ -251,7 +251,7 @@ function badge(bool $value): string
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Demo Redis Chatbot</title>
+	<title>Demo Redis Prezzy</title>
 	<link rel="stylesheet" href="css/admin-base.css">
 	<link rel="stylesheet" href="css/admin-menu.css">
 	<link rel="stylesheet" href="css/admin-header.css">
@@ -316,7 +316,7 @@ function badge(bool $value): string
 
 		<div class="panel">
 			<h3>Esplora chiavi Redis</h3>
-			<p>Usa un pattern Redis SCAN (esempi: <strong>*</strong>, <strong>chatbot:*</strong>, <strong>*sess:*</strong>).</p>
+			<p>Usa un pattern Redis SCAN (esempi: <strong>*</strong>, <strong>prezzy:*</strong>, <strong>*sess:*</strong>).</p>
 			<form method="get" class="actions compact">
 				<input type="hidden" name="action" value="scan-all">
 				<input type="text" class="input-compact" name="pattern" value="<?= h($scanPattern) ?>">
