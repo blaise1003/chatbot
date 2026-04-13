@@ -1,0 +1,125 @@
+.admin-layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+}
+
+.admin-sidebar {
+    background: #0f1b2b;
+    color: #e8eef8;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    padding: 20px 16px 28px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: auto;
+}
+
+.admin-brand {
+    padding: 10px 12px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    margin-bottom: 16px;
+}
+
+.admin-brand h1 {
+    font-size: 20px;
+    margin: 0;
+    color: #e8eef8;
+}
+
+.admin-brand p {
+    margin: 6px 0 0;
+    color: #9cb2cc;
+    font-size: 13px;
+}
+
+.admin-tree details {
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.03);
+}
+
+.admin-tree summary {
+    list-style: none;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 10px 12px;
+    color: #d8e6f8;
+}
+
+.admin-tree summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-items {
+    padding: 4px 8px 10px;
+    display: grid;
+    gap: 6px;
+}
+
+.admin-item {
+    display: block;
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: #dfebfb;
+    border: 1px solid transparent;
+    font-size: 14px;
+}
+
+.admin-item:hover {
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+}
+
+.admin-item.active {
+    border-color: rgba(232,117,17,0.7);
+    background: rgba(232,117,17,0.14);
+    color: #ffd7b3;
+}
+
+.admin-item.disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.admin-item small {
+    display: block;
+    color: #9db2c9;
+    font-size: 12px;
+    margin-top: 4px;
+    line-height: 1.35;
+}
+
+.admin-sidebar-footer {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+}
+
+.admin-item-logout {
+    text-align: center;
+    font-weight: 700;
+    border-color: rgba(239,68,68,0.55);
+    color: #fecaca;
+    background: rgba(239,68,68,0.15);
+}
+
+.admin-item-logout:hover {
+    border-color: rgba(239,68,68,0.85);
+    background: rgba(239,68,68,0.25);
+}
+
+@media (max-width: 980px) {
+    .admin-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+}

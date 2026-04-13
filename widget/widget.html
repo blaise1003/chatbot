@@ -1,0 +1,20 @@
+<!-- ============================================================
+     SNIPPET DI INTEGRAZIONE — Widget Chatbot Assistente
+     
+     Copia e incolla questo blocco prima del tag </body>
+     su qualsiasi pagina dove vuoi il chatbot.
+     
+     PREREQUISITI:
+     1. Carica getty-widget.css nel <head>
+     2. Carica getty.png nella stessa cartella (o modifica il path in getty-widget.js)
+     3. Il backend chat_api.php deve essere raggiungibile all'URL configurato in getty-widget.js
+     ============================================================ -->
+
+<!-- Nel <head> del sito aggiungere: -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://example.info/Chatbot/widget/getty-widget.css">
+
+<!-- Prima del </body> aggiungere: -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.4/purify.min.js" async></script>
+<script src="https://example.info/Chatbot/widget/getty-widget.js?customerSessionId=<EXT_SESSION_ID>&token=<CHATBOT_WIDGET_TOKEN>&v3=<CUSTOMER_ID>" async></script>

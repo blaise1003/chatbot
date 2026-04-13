@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>example — Ambiente di Staging Bot AI</title>
+    <meta name="description" content="Ambiente di staging per il test del chatbot AI di example.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --pf-navy:    #102131;
+            --pf-navy-2:  #1a3347;
+            --pf-orange:  #F29100;
+            --pf-green:   #3BB371;
+            --pf-pink-bg: #F5D5D5;
+            --pf-yellow-bg:#F9EAB0;
+            --pf-green-bg: #C9EFC0;
+            --pf-light:   #f4f5f7;
+            --pf-white:   #ffffff;
+            --pf-text:    #1a2b3c;
+            --pf-muted:   #6b7a8d;
+            --pf-font:    'Inter', sans-serif;
+            /* Widget vars */
+            --w-primary: #1D4ED8;
+            --w-gradient: linear-gradient(135deg, #1D4ED8, #6366f1);
+        }
+
+        html { scroll-behavior: smooth; }
+        body { font-family: var(--pf-font); background: var(--pf-light); color: var(--pf-text); }
+
+        /* ============ STAGING BADGE ============ */
+        .staging-bar {
+            background: linear-gradient(90deg, #7c3aed, #db2777);
+            color: white; text-align: center;
+            padding: 8px 16px; font-size: 0.8rem; font-weight: 600;
+            letter-spacing: 0.05em; z-index: 1000; position: relative;
+        }
+        .staging-bar a { color: rgba(255,255,255,0.85); text-decoration: none; margin-left: 12px; }
+        .staging-bar a:hover { text-decoration: underline; }
+
+        /* ============ HEADER ============ */
+        .pf-header {
+            background: var(--pf-navy);
+            padding: 0 24px;
+            position: sticky; top: 0; z-index: 999;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+        .pf-header-inner {
+            max-width: 1280px; margin: 0 auto;
+            display: flex; align-items: center; gap: 20px;
+            height: 64px;
+        }
+        .pf-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; flex-shrink: 0;
+        }
+        .pf-logo-icon {
+            width: 36px; height: 36px; background: #1a4fa0;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; position: relative;
+        }
+        .pf-logo-p {
+            color: white; font-weight: 800; font-size: 1.1rem; line-height: 1;
+        }
+        .pf-logo-arrow {
+            position: absolute; bottom: 4px; right: 2px;
+            width: 0; height: 0;
+            border-left: 5px solid transparent;
+            border-right: 0px solid transparent;
+            border-top: 8px solid var(--pf-orange);
+        }
+        .pf-logo-text { color: white; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; }
+        .pf-logo-text span { font-weight: 400; }
+
+        .pf-search {
+            flex: 1; display: flex; align-items: center;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; padding: 0 16px; gap: 10px; height: 42px;
+            transition: background 0.2s;
+        }
+        .pf-search:focus-within { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.3); }
+        .pf-search input {
+            background: none; border: none; outline: none; color: white;
+            font-family: var(--pf-font); font-size: 0.92rem; width: 100%;
+        }
+        .pf-search input::placeholder { color: rgba(255,255,255,0.5); }
+        .pf-search svg { flex-shrink: 0; opacity: 0.6; }
+
+        .pf-header-icons { display: flex; gap: 6px; flex-shrink: 0; }
+        .pf-icon-btn {
+            width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.08);
+            border: none; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; color: white; transition: background 0.2s; position: relative;
+        }
+        .pf-icon-btn:hover { background: rgba(255,255,255,0.15); }
+        .pf-cart-badge {
+            position: absolute; top: 4px; right: 4px;
+            width: 16px; height: 16px; background: var(--pf-orange);
+            border-radius: 50%; font-size: 0.65rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; color: white;
+        }
+
+        /* ============ SERVICE STRIP ============ */
+        .service-strip {
+            background: var(--pf-navy-2);
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .service-strip-inner {
+            max-width: 1280px; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            padding: 0 24px;
+        }
+        .service-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; color: white;
+            border-right: 1px solid rgba(255,255,255,0.07);
+            transition: background 0.2s; cursor: default;
+        }
+        .service-item:last-child { border-right: none; }
+        .service-item:hover { background: rgba(255,255,255,0.05); }
+        .service-icon {
+            width: 36px; height: 36px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.08); border-radius: 8px;
+        }
+        .service-icon svg { width: 18px; height: 18px; }
+        .service-text strong { display: block; font-size: 0.8rem; font-weight: 600; line-height: 1.2; }
+        .service-text small { font-size: 0.7rem; opacity: 0.65; line-height: 1.3; display: block; margin-top: 2px; }
+
+        /* ============ HERO BANNER ============ */
+        .hero {
+            background: linear-gradient(135deg, #0f2d4a 0%, #1a4a6e 40%, #0d3558 100%);
+            padding: 60px 24px;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: -60px; right: -60px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(242,145,0,0.12) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .hero-inner {
+            max-width: 1280px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+            align-items: center;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(242,145,0,0.15); border: 1px solid rgba(242,145,0,0.4);
+            color: #fbbf24; padding: 5px 14px; border-radius: 100px;
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em;
+            text-transform: uppercase; margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-size: 2.4rem; font-weight: 800; color: white; line-height: 1.15;
+            margin-bottom: 16px; letter-spacing: -0.03em;
+        }
+        .hero h1 em { font-style: normal; color: var(--pf-orange); }
+        .hero p {
+            color: rgba(255,255,255,0.7); font-size: 1rem; line-height: 1.7;
+            margin-bottom: 32px; max-width: 480px;
+        }
+        .hero-cta {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--pf-orange); color: white; font-weight: 700;
+            padding: 14px 28px; border-radius: 10px; text-decoration: none;
+            font-size: 0.95rem; transition: opacity 0.2s, transform 0.15s;
+            cursor: pointer; border: none; font-family: var(--pf-font);
+        }
+        .hero-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Hero right: floating cards */
+        .hero-visual {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        .conv-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 20px;
+            backdrop-filter: blur(8px);
+        }
+        .conv-card.tall { grid-row: span 2; }
+        .conv-card-icon { font-size: 2rem; margin-bottom: 10px; }
+        .conv-card h4 { color: white; font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+        .conv-card p  { color: rgba(255,255,255,0.5); font-size: 0.78rem; line-height: 1.5; }
+        .conv-card-stat { font-size: 1.8rem; font-weight: 800; color: var(--pf-orange); margin-top: 12px; }
+
+        /* ============ GARANZIE ============ */
+        .garanzie {
+            padding: 0 24px; margin-top: -1px;
+        }
+        .garanzie-inner {
+            max-width: 1280px; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+        }
+        .garanzia-card {
+            padding: 36px 32px; position: relative;
+        }
+        .garanzia-card:nth-child(1) { background: var(--pf-pink-bg); }
+        .garanzia-card:nth-child(2) { background: var(--pf-yellow-bg); }
+        .garanzia-card:nth-child(3) { background: var(--pf-green-bg); }
+        .garanzia-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px; font-size: 1.5rem;
+        }
+        .garanzia-card:nth-child(1) .garanzia-icon { background: rgba(220,53,69,0.15); }
+        .garanzia-card:nth-child(2) .garanzia-icon { background: rgba(242,145,0,0.15); }
+        .garanzia-card:nth-child(3) .garanzia-icon { background: rgba(59,179,113,0.15); }
+        .garanzia-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--pf-text); }
+        .garanzia-card p  { font-size: 0.85rem; color: var(--pf-muted); line-height: 1.6; }
+
+        /* ============ FEATURES DETTAGLIO (sostituisce categorie) ============ */
+        .features-section {
+            max-width: 1280px; margin: 48px auto; padding: 0 24px;
+        }
+        .section-title {
+            font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; color: var(--pf-text);
+        }
+        .section-subtitle {
+            font-size: 0.92rem; color: var(--pf-muted); margin-bottom: 28px;
+        }
+        .features-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        }
+        .feature-card {
+            background: white; border: 1px solid #e8edf2;
+            border-radius: 16px; padding: 28px; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+        }
+        .feature-card-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: linear-gradient(135deg, #1D4ED8, #6366f1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; margin-bottom: 16px;
+        }
+        .feature-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p  { font-size: 0.83rem; color: var(--pf-muted); line-height: 1.6; }
+        .feature-tag {
+            display: inline-block; margin-top: 12px;
+            background: #EEF2FF; color: #4F46E5;
+            font-size: 0.72rem; font-weight: 600; padding: 3px 10px;
+            border-radius: 100px;
+        }
+        .feature-tag.green { background: #ECFDF5; color: #059669; }
+        .feature-tag.orange{ background: #FFF7ED; color: #EA580C; }
+
+        /* ============ TRUSTPILOT STRIP ============ */
+        .trustpilot-strip {
+            background: var(--pf-green); padding: 16px 24px; text-align: center;
+            color: white; font-size: 0.875rem; font-weight: 500; margin-top: 48px;
+        }
+        .trustpilot-strip strong { font-weight: 700; }
+        .tp-stars { color: #FFD700; font-size: 1rem; margin: 0 6px; }
+
+        /* ============ PRODUCTS PLACEHOLDER ============ */
+        .products-section {
+            max-width: 1280px; margin: 0 auto 48px; padding: 0 24px;
+        }
+        .products-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px;
+        }
+        .product-card {
+            background: white; border: 1px solid #e8edf2; border-radius: 14px;
+            padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .product-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+        .product-thumb {
+            width: 80px; height: 80px; background: var(--pf-light);
+            border-radius: 10px; margin: 0 auto 14px; display: flex;
+            align-items: center; justify-content: center; font-size: 2rem;
+        }
+        .product-card h5 { font-size: 0.83rem; font-weight: 600; margin-bottom: 8px; line-height: 1.4; color: var(--pf-text); }
+        .product-price { font-size: 1.1rem; font-weight: 800; color: var(--pf-navy); }
+        .product-btn {
+            display: block; margin-top: 12px; padding: 8px;
+            background: var(--pf-navy); color: white; border-radius: 8px;
+            font-size: 0.78rem; font-weight: 600; text-decoration: none;
+            transition: background 0.2s;
+        }
+        .product-btn:hover { background: var(--pf-navy-2); }
+
+        /* ============ FOOTER ============ */
+        .pf-footer {
+            background: var(--pf-navy); color: rgba(255,255,255,0.5);
+            text-align: center; padding: 28px 24px;
+            font-size: 0.8rem; margin-top: 0;
+        }
+        .pf-footer strong { color: white; }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 900px) {
+            .hero-inner { grid-template-columns: 1fr; }
+            .hero-visual { display: none; }
+            .service-strip-inner { grid-template-columns: repeat(3, 1fr); }
+            .service-item:nth-child(4),
+            .service-item:nth-child(5) { display: none; }
+            .garanzie-inner,
+            .features-grid { grid-template-columns: 1fr; }
+            .products-grid { grid-template-columns: repeat(2,1fr); }
+        }
+        @media (max-width: 580px) {
+            .service-strip-inner { grid-template-columns: 1fr 1fr; }
+            .service-item:nth-child(3),
+            .service-item:nth-child(4),
+            .service-item:nth-child(5) { display: none; }
+            .products-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+
+</head>
+<body>
+
+    <!-- Staging Bar -->
+    <div class="staging-bar">
+        🧪 AMBIENTE DI STAGING — Bot AI v1.0 &nbsp;|&nbsp; Non indicizzato &nbsp;|&nbsp;
+        <a href="#">→ Vai al sito reale</a>
+    </div>
+
+    <!-- Header -->
+    <header class="pf-header">
+        <div class="pf-header-inner">
+            <a href="#" class="pf-logo">
+                <div class="pf-logo-icon">
+                    <span class="pf-logo-p">P</span>
+                    <div class="pf-logo-arrow"></div>
+                </div>
+                <span class="pf-logo-text"><span>Prezzo</span>Forte</span>
+            </a>
+            <div class="pf-search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input type="text" placeholder="Cosa stai cercando?">
+            </div>
+            <div class="pf-header-icons">
+                <button class="pf-icon-btn" aria-label="Account">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </button>
+                <button class="pf-icon-btn" aria-label="Carrello" style="position:relative">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <span class="pf-cart-badge">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Service Strip -->
+    <div class="service-strip">
+        <div class="service-strip-inner">
+            <div class="service-item">
+                <div class="service-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div class="service-text">
+                    <strong>Bot AI Assistente</strong>
+                    <small>Assistente virtuale sempre attivo</small>
+                </div>
+            </div>
+            <div class="service-item">
+                <div class="service-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                </div>
+                <div class="service-text">
+                    <strong>Ricerca Prodotti AI</strong>
+                    <small>Trova l'articolo perfetto con Doofinder</small>
+                </div>
+            </div>
+            <div class="service-item">
+                <div class="service-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <div class="service-text">
+                    <strong>Stato Ordini Live</strong>
+                    <small>Tracking integrato BRT/DHL/GLS</small>
+                </div>
+            </div>
+            <div class="service-item">
+                <div class="service-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                </div>
+                <div class="service-text">
+                    <strong>API Sicura</strong>
+                    <small>CORS + sessioni protette</small>
+                </div>
+            </div>
+            <div class="service-item">
+                <div class="service-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div class="service-text">
+                    <strong>Claude AI / OpenAI</strong>
+                    <small>Motore LLM configurabile</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div>
+                <div class="hero-badge">🧪 Staging v1.0 — Bot AI</div>
+                <h1>Il tuo assistente<br><em>intelligente</em> su<br>example.it</h1>
+                <p>Assistente risponde 24/7, aiuta i clienti a trovare prodotti tramite ricerca AI e controlla lo stato degli ordini in tempo reale — direttamente nella chat del sito.</p>
+                <button class="hero-cta" onclick="document.getElementById('pf-widget-fab').click()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Prova Assistente ora
+                </button>
+            </div>
+            <div class="hero-visual">
+                <div class="conv-card tall">
+                    <div class="conv-card-icon">🤖</div>
+                    <h4>Claude AI</h4>
+                    <p>Modello LLM di ultima generazione per risposte naturali e precise</p>
+                    <div class="conv-card-stat">4.5</div>
+                </div>
+                <div class="conv-card">
+                    <div class="conv-card-icon">📦</div>
+                    <h4>Ordini test</h4>
+                    <p>5 scenari preconfigurati</p>
+                </div>
+                <div class="conv-card">
+                    <div class="conv-card-icon">🔍</div>
+                    <h4>Ricerca live</h4>
+                    <p>Catalogo reale example</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Garanzie (ispirate al design originale) -->
+    <div class="garanzie">
+        <div class="garanzie-inner">
+            <div class="garanzia-card">
+                <div class="garanzia-icon">🎯</div>
+                <h3>Risposte precise, sempre.</h3>
+                <p>Il bot usa solo dati reali provenienti dalle API. Nessuna invenzione, nessun placeholder. Prezzi, disponibilità e tracking sempre aggiornati.</p>
+            </div>
+            <div class="garanzia-card">
+                <div class="garanzia-icon">⚡</div>
+                <h3>Risposte veloci, sempre.</h3>
+                <p>Claude Haiku 4.5 garantisce risposte in pochi secondi. Retry automatico e validazione delle azioni per evitare blocchi o attese infinite.</p>
+            </div>
+            <div class="garanzia-card">
+                <div class="garanzia-icon">🔒</div>
+                <h3>Sicurezza garantita, sempre.</h3>
+                <p>Protezione CORS, sessioni isolate per utente, chiavi API fuori dalla webroot e .htaccess configurato contro accessi non autorizzati.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features dettaglio (sostituisce categorie prodotto) -->
+    <section class="features-section">
+        <div class="section-title">Funzionalità integrate in questa versione</div>
+        <div class="section-subtitle">Staging Build — tutte le feature attive e testabili direttamente con il bot in basso a destra</div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-card-icon">🤖</div>
+                <h4>Motore AI: Claude Haiku 4.5</h4>
+                <p>Migrazione completa da OpenAI a Anthropic Claude. Prompt avanzato con regole esplicite per la corretta formattazione degli ordini e dei prodotti.</p>
+                <span class="feature-tag">✅ Attivo</span>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">🔍</div>
+                <h4>Ricerca Prodotti Doofinder</h4>
+                <p>Integrazione con l'API Doofinder del catalogo reale example. Il bot fa domande di affinamento prima di cercare, per risultati più precisi.</p>
+                <span class="feature-tag green">✅ Catalogo reale</span>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">📦</div>
+                <h4>Stato Ordini — Modalità TEST</h4>
+                <p>Pulsante toggle nell'header del bot: switch tra API reale (example) e 5 ordini fittizi locali (In lavorazione, Spedito, Consegnato, Rimborso, Annullato).</p>
+                <span class="feature-tag orange">🧪 Modalità test</span>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">🔄</div>
+                <h4>Retry automatico JSON</h4>
+                <p>Se Claude risponde senza JSON valido, il sistema corregge automaticamente e riprova. Risolve i blocchi su messaggi ambigui come "sorprendimi".</p>
+                <span class="feature-tag">✅ Attivo</span>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">🛡️</div>
+                <h4>Validazione chiavi azione</h4>
+                <p>Layer di controllo post-risposta: se Claude dice "cerco" ma omette "Keyword search", il sistema rileva l'anomalia e forza la correzione prima di rispondere.</p>
+                <span class="feature-tag green">✅ Attivo</span>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">💾</div>
+                <h4>Sessioni su file (no DB)</h4>
+                <p>La memoria della conversazione è salvata in file JSON locali nella cartella /chatbot_sessions. Nessun database richiesto. Max 40 messaggi per sessione.</p>
+                <span class="feature-tag">✅ cPanel ready</span>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">🛠️</div>
+                <h4>Admin</h4>
+                <p>Accesso protetto alla dashboard <a href="admin/index.php" class="feature-docs-link">→ Admin</a> tramite password. Gestione sicura delle sessioni e delle configurazioni del chatbot.</p>
+				<span class="feature-tag">✅ Admin</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Prodotti in evidenza (placeholder) -->
+    <section class="products-section">
+        <div class="section-title">Prodotti in evidenza</div>
+        <div class="products-grid">
+            <div class="product-card">
+                <div class="product-thumb">📺</div>
+                <h5>Smart TV Samsung 55" 4K QLED</h5>
+                <div class="product-price">€ 799,00</div>
+                <a href="#" class="product-btn">Vai al prodotto</a>
+            </div>
+            <div class="product-card">
+                <div class="product-thumb">🧺</div>
+                <h5>Lavatrice Bosch Serie 6 8kg A+++</h5>
+                <div class="product-price">€ 649,00</div>
+                <a href="#" class="product-btn">Vai al prodotto</a>
+            </div>
+            <div class="product-card">
+                <div class="product-thumb">❄️</div>
+                <h5>Frigorifero LG 384L Classe D</h5>
+                <div class="product-price">€ 1.249,00</div>
+                <a href="#" class="product-btn">Vai al prodotto</a>
+            </div>
+            <div class="product-card">
+                <div class="product-thumb">🍳</div>
+                <h5>Forno da incasso Whirlpool AKZ IX</h5>
+                <div class="product-price">€ 489,00</div>
+                <a href="#" class="product-btn">Vai al prodotto</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trustpilot Strip -->
+    <div class="trustpilot-strip">
+        <strong>example.it</strong> — Percentuale di soddisfazione clienti
+        <span class="tp-stars">★★★★★</span>
+        mediamente del <strong>98%</strong> &nbsp;|&nbsp; Staging Bot v1.0 attivo 🤖
+    </div>
+
+    <!-- Footer -->
+    <footer class="pf-footer">
+        <strong>example.it</strong> — Ambiente di staging non pubblico &nbsp;·&nbsp;
+        Bot AI powered by Anthropic Claude &nbsp;·&nbsp;
+        🧪 Solo per uso interno &nbsp;·&nbsp;
+        <a href="#" style="color:rgba(255,255,255,0.5)">Vai al sito reale →</a>
+    </footer>
+
+</body>
+</html>
