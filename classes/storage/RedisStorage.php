@@ -3,7 +3,7 @@
 namespace Chatbot;
 
 /**
- * Layer 1 � Redis storage.
+ * Layer 1 - Redis storage.
  *
  * Requires the PhpRedis extension (ext-redis).
  * If the extension is missing or Redis is unreachable the instance marks
@@ -115,20 +115,20 @@ class RedisStorage implements StorageInterface {
         $maxD    = $maxRequests * (int) \ceil(86400 / $safe);
 
         try {
-            // ── Layer 1: sliding window (minute) ─────────────────────────────
+            // ── Layer 1: sliding window (per minute) ─────────────────────────────
             $this->redis->zRemRangeByScore($keyMin, '-inf', (string) $windowStart);
             $countMin = (int) $this->redis->zCard($keyMin);
             if ($countMin >= $maxRequests) {
                 return true;
             }
 
-            // ── Layer 2: fixed window (hour) — read only ──────────────────────
+            // ── Layer 2: fixed window (per hour) — read only ──────────────────────
             $countH = (int) ($this->redis->get($keyH) ?: 0);
             if ($countH >= $maxH) {
                 return true;
             }
 
-            // ── Layer 3: fixed window (day) — read only ───────────────────────
+            // ── Layer 3: fixed window (per day) — read only ───────────────────────
             $countD = (int) ($this->redis->get($keyD) ?: 0);
             if ($countD >= $maxD) {
                 return true;

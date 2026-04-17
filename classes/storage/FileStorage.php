@@ -38,6 +38,8 @@ class FileStorage implements StorageInterface
 
         $data    = \file_get_contents($file);
         $history = \json_decode($data, true);
+
+		Logger::logDebug("loadHistory", "Loaded history for sessionId: " . $sessionId . " - " . json_encode($history)); // DEBUG LOG
         return \is_array($history) ? $history : [];
     }
 

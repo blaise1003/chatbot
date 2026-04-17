@@ -3,12 +3,12 @@
 namespace Chatbot;
 
 /**
- * Session orchestrator � three-layer storage strategy.
+ * Session orchestrator - three-layer storage strategy.
  *
- * Layer 1 (Redis)   � fast in-memory sessions; optional, graceful fallback.
- * Layer 2 (File)    � always-available disk storage; write-through backup
+ * Layer 1 (Redis)   - fast in-memory sessions; optional, graceful fallback.
+ * Layer 2 (File)    - always-available disk storage; write-through backup
  *                     when Redis is active so data survives Redis restarts.
- * Layer 3 (MySQL)   � persistent analytics store; flushed asynchronously on
+ * Layer 3 (MySQL)   - persistent analytics store; flushed asynchronously on
  *                     defined triggers (see flushToDatabase / maybeFlushToDatabase).
  */
 class SessionManager
@@ -121,6 +121,15 @@ class SessionManager
         $this->mysqlStorage->upsert($sessionId, $ipHash, $history, $customerId, $reason);
     }
 
+    public function syncHandoffState(string $sessionId, array $handoffState): void
+    {
+        if ($this->mysqlStorage === null) {
+            return;
+        }
+
+        $this->mysqlStorage->upsertHandoffState($sessionId, $handoffState);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -132,6 +141,7 @@ class SessionManager
     private function maybeFlushToDatabase(string $sessionId, array $history, string $customerId): void
     {
         if ($this->mysqlStorage === null) {
+			Logger::logError("maybeFlushToDatabase", "MySQL storage non disponibile, impossibile flush per sessionId: " . $sessionId); // DEBUG LOG
             return;
         }
 
@@ -140,11 +150,13 @@ class SessionManager
         }));
 
         if ($assistantCount === 1) {
+			Logger::logDebug("maybeFlushToDatabase", "Trigger flush MySQL: prima risposta dell'assistente per sessionId: " . $sessionId); // DEBUG LOG
             $this->flushToDatabase($sessionId, $history, $customerId, 'first_message');
             return;
         }
 
         if ($assistantCount > 1 && $assistantCount % self::FLUSH_EVERY_N_EXCHANGES === 0) {
+			Logger::logDebug("maybeFlushToDatabase", "Trigger flush MySQL: " . self::FLUSH_EVERY_N_EXCHANGES . " risposte dell'assistente per sessionId: " . $sessionId); // DEBUG LOG
             $this->flushToDatabase($sessionId, $history, $customerId, 'periodic');
         }
     }
@@ -154,26 +166,28 @@ class SessionManager
         $ip    = \preg_replace('/[^a-fA-F0-9:\.]/', '', $this->requestGuard->getClientIp());
         $ipKey = \hash('sha256', $ip);
 
-        $ipExceeded = $this->trafficLimiter->isExceeded(
+        $ipExceeded = $this->trafficLimiter->isExceeded( // Per session check rate limit: IP-based bucket
             'ip:' . $ipKey,
             \CHATBOT_RATE_LIMIT_MAX_REQUESTS,
             \CHATBOT_RATE_LIMIT_WINDOW_SECONDS
         );
 
         if ($ipExceeded) {
+			Logger::logError("applyRateLimit", "Rate limit superato per IP: " . $ip . " (hash: " . $ipKey . ")"); // DEBUG LOG
             \json_response([
                 'reply'   => 'Troppe richieste ravvicinate. Riprova tra qualche minuto.',
                 'options' => [],
             ], 429);
         }
 
-        $globalExceeded = $this->trafficLimiter->isExceeded(
+        $globalExceeded = $this->trafficLimiter->isExceeded( // Global rate limit check: all requests
             'global:all_requests',
             \CHATBOT_GLOBAL_RATE_LIMIT_MAX_REQUESTS,
             \CHATBOT_GLOBAL_RATE_LIMIT_WINDOW_SECONDS
         );
 
         if ($globalExceeded) {
+			Logger::logError("applyRateLimit", "Rate limit globale superato."); // DEBUG LOG
             \json_response([
                 'reply'   => 'Servizio temporaneamente molto richiesto. Riprova tra qualche secondo.',
                 'options' => [],

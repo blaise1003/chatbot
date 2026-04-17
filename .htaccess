@@ -1,3 +1,6 @@
+order deny,allow
+deny from all
+
 Options -Indexes
 
 <IfModule mod_headers.c>
@@ -8,10 +11,17 @@ Options -Indexes
     Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 </IfModule>
 
-<FilesMatch "^(SECURITY_REVIEW\.md|DEPLOY_CHECKLIST\.md|ISTRUZIONI\.md|GUIDA_INTEGRAZIONE\.md)$">
-    Require all denied
-</FilesMatch>
-
 <FilesMatch "\.(json|md|log|env)$">
     Require all denied
 </FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^dashboard\.php$ /Chatbot/admin/dashboard.php [R=302,L,NC,QSA]
+</IfModule>
+
+<IfModule mod_rewrite.c>
+RewriteEngine on
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
+</IfModule>

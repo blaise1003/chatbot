@@ -1,0 +1,131 @@
+.analytics-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.analytics-kpi-card {
+    background: rgba(255,255,255,0.88);
+    border: 1px solid rgba(15,23,42,0.08);
+    border-radius: 14px;
+    padding: 18px 20px;
+    border-top: 4px solid var(--kpi-color, #3b82f6);
+}
+
+.analytics-kpi-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.analytics-kpi-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 6px;
+}
+
+.analytics-kpi-trend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.trend-good  { color: #16a34a; font-weight: 700; }
+.trend-bad   { color: #dc2626; font-weight: 700; }
+.trend-neutral { color: var(--muted); }
+
+.analytics-chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.analytics-chart-head h2 {
+    margin: 0;
+}
+
+.analytics-chart-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.analytics-chart-svg {
+    width: 100%;
+    max-width: 800px;
+    display: block;
+}
+
+.analytics-table-wrap {
+    overflow-x: auto;
+}
+
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.analytics-table th,
+.analytics-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #e2e8ea;
+    text-align: left;
+}
+
+.analytics-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    background: #f7f9fb;
+}
+
+.analytics-table td.num,
+.analytics-table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.analytics-row-today td {
+    background: #fffbf0;
+    font-weight: 600;
+}
+
+.analytics-val-bad  { color: #dc2626; }
+.analytics-val-warn { color: #d97706; }
+
+.analytics-totals td {
+    background: #f1f5f9;
+    border-top: 2px solid #cbd5e1;
+}
+
+.pill-today {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-radius: 6px;
+    padding: 1px 6px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+@media (max-width: 700px) {
+    .analytics-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .analytics-kpi-value {
+        font-size: 24px;
+    }
+}

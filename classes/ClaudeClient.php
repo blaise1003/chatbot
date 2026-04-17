@@ -43,7 +43,7 @@ class ClaudeClient implements AiClientInterface
 		}
 
 		if (empty($clean_messages) || $clean_messages[0]['role'] !== 'user') {
-			return ['_ok' => true, 'reply' => "Ciao! Sono l'assistente virtuale, come posso aiutarti? ??"];
+			return ['_ok' => true, 'reply' => "Ciao! Sono getty, come posso aiutarti? ??"];
 		}
 
 		$payload = [
@@ -125,7 +125,7 @@ class ClaudeClient implements AiClientInterface
 				$result = ['_ok' => false, 'reply' => "Scusa, non ho capito bene. Potresti riformulare la richiesta? ??"];
 			}
 		} else {
-			// Risposta API non contiene content � errore generico
+			// Risposta API non contiene content è errore generico
 			Logger::logError("parseClaudeResponse", "[Claude] Risposta senza content: " . json_encode($res_json));
 			$result = ['_ok' => false, 'reply' => "Scusa, i server dell'assistente non hanno risposto correttamente. Riprova tra poco! ??"];
 		}

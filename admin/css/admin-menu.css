@@ -68,6 +68,50 @@
     font-size: 14px;
 }
 
+.admin-item-title-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.admin-item-title {
+    display: inline-block;
+}
+
+.admin-alert-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+    background: #ef4444;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35);
+    animation: admin-alert-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes admin-alert-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.45);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 7px rgba(239, 68, 68, 0.12);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.45);
+    }
+}
+
 .admin-item:hover {
     border-color: rgba(255,255,255,0.2);
     background: rgba(255,255,255,0.08);

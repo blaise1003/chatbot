@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+//declare(strict_types=1);
 
 session_start();
 
@@ -143,15 +143,29 @@ function read_tail(string $path, int $maxLines): string
 // ??? Collect log files ???????????????????????????????????????????????????????
 const TAIL_LINES = 200;
 
-$logsDir    = logs_dir();
-$showFull   = isset($_GET['full']) && (string) $_GET['full'] === '1';
-$maxLines   = $showFull ? 0 : TAIL_LINES;
+$logsDir      = logs_dir();
+$showFull     = isset($_GET['full']) && (string) $_GET['full'] === '1';
+$selectedDate = isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $_GET['date'])
+    ? (string) $_GET['date']
+    : date('Y-m-d');
+$maxLines     = $showFull ? 0 : TAIL_LINES;
+
+/**
+ * Extract date from log filename (format: xxxx--YYYY-MM-DD.log)
+ */
+function extract_date_from_log_name(string $filename): ?string
+{
+    if (preg_match('/.*-(\d{4}-\d{2}-\d{2})\.log$/i', $filename, $matches)) {
+        return $matches[1];
+    }
+    return null;
+}
 
 $logFiles   = [];
 $dirError   = '';
 
 if ($logsDir === '') {
-    $dirError = 'La costante CHATBOT_LOGS_DIR non è definita o è vuota.';
+    $dirError = 'La costante CHATBOT_LOGS_DIR non ï¿½ definita o ï¿½ vuota.';
 } elseif (!is_dir($logsDir)) {
     $dirError = 'Directory log non trovata: ' . $logsDir;
 } else {
@@ -170,6 +184,12 @@ if ($logsDir === '') {
 
                 // Only serve .log files
                 if (!preg_match('/\.log$/i', $entry)) {
+                    continue;
+                }
+
+                // Filter by selected date
+                $fileDate = extract_date_from_log_name($entry);
+                if ($fileDate !== $selectedDate) {
                     continue;
                 }
 
@@ -251,13 +271,22 @@ $totalFiles = count($logFiles);
                         <code class="logs-meta-path"><?= h($logsDir) ?></code>
                     </div>
                     <div class="logs-meta-right">
+                        <div class="logs-date-picker">
+                            <label for="log-date-select" class="logs-meta-label">Data</label>
+                            <input
+                                type="date"
+                                id="log-date-select"
+                                value="<?= h($selectedDate) ?>"
+                                onchange="window.location.href = 'logs.php?date=' + this.value + (<?= $showFull ? '1' : '0' ?> ? '&full=1' : '');"
+                            >
+                        </div>
                         <span class="muted"><?= h((string) $totalFiles) ?> file trovati</span>
                         <?php if (!$showFull): ?>
-                            <a class="btn secondary" href="?full=1">Mostra tutto</a>
+                            <a class="btn secondary" href="?date=<?= h($selectedDate) ?>&full=1">Mostra tutto</a>
                         <?php else: ?>
-                            <a class="btn secondary" href="logs.php">Ultimi <?= TAIL_LINES ?> righe</a>
+                            <a class="btn secondary" href="logs.php?date=<?= h($selectedDate) ?>">Ultimi <?= TAIL_LINES ?> righe</a>
                         <?php endif; ?>
-                        <a class="btn secondary" href="logs.php<?= $showFull ? '?full=1' : '' ?>">Aggiorna</a>
+                        <a class="btn secondary" href="logs.php?date=<?= h($selectedDate) ?><?= $showFull ? '&full=1' : '' ?>">Aggiorna</a>
                     </div>
                 </div>
             </section>

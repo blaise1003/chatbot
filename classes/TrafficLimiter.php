@@ -30,7 +30,7 @@ class TrafficLimiter
             if (!$this->redisStorage->isAvailable()) {
                 return $this->fileStorage->checkRateLimit($key, $maxRequests, $windowSeconds);
             }
-
+			Logger::logDebug("isExceeded", "Rate limit check for bucket: " . $bucket . " (key: " . $key . ") - exceeded: " . ($exceeded ? "yes" : "no")); // DEBUG LOG
             return $exceeded;
         }
 

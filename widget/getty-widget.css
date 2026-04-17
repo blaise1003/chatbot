@@ -60,47 +60,57 @@
 }
 
 #pf-resize-handle {
-	position: absolute; top: 0; left: 0;
-	width: 36px; height: 36px;
-	cursor: nwse-resize; z-index: 10;
-	border-radius: 24px 0 0 0;
-	display: flex; align-items: flex-start; justify-content: flex-start;
-	padding: 7px 0 0 7px;
-	opacity: 0.35;
-	transition: opacity 0.2s, transform 0.15s;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 36px;
+    height: 36px;
+    cursor: nwse-resize;
+    z-index: 10;
+    border-radius: 24px 0 30px 0;   /* si adatta all'angolo del widget */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.08);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+/* Tooltip visivo: freccia angolare in basso a destra del blocco */
+/* #pf-resize-handle::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid rgba(255,255,255,0.5);
+    border-bottom: 2px solid rgba(255,255,255,0.5);
+    border-radius: 1px;
+    transition: border-color 0.2s ease;
+} */
+
+#pf-chat-window:hover #pf-resize-handle,
+#pf-resize-handle:hover {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    transform: scale(1.08);
+}
+
+#pf-resize-handle:hover::after {
+    border-color: white;
 }
 
 #pf-chat-window:hover #pf-resize-handle,
 #pf-resize-handle:hover {
 	opacity: 1;
-	transform: scale(1.15);
+	transform: scale(1.05);
 }
 
-#pf-resize-handle::before {
-	content: '';
-	display: block;
-	width: 16px; height: 16px;
-	background-image:
-		linear-gradient(135deg, rgba(99,102,241,0.9) 1.5px, transparent 1.5px),
-		linear-gradient(135deg, rgba(99,102,241,0.9) 1.5px, transparent 1.5px),
-		linear-gradient(135deg, rgba(99,102,241,0.9) 1.5px, transparent 1.5px);
-	background-size: 16px 16px, 10px 10px, 4px 4px;
-	background-position: 0 0, 0 0, 0 0;
-	background-repeat: no-repeat;
-	/* tre tacche diagonali */
-	background-image:
-		repeating-linear-gradient(
-			135deg,
-			rgba(99,102,241,0.9) 0px,
-			rgba(99,102,241,0.9) 1.5px,
-			transparent 1.5px,
-			transparent 5px
-		);
-}
 #pf-chat-window.pf-open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
 
 .pf-chat-header {
-	background: var(--w-gradient); padding: 20px 24px; color: white;
+	background: var(--w-gradient); padding: 30px 24px 20px 24px; color: white;
 	display: flex; align-items: center; gap: 14px;
 }
 .pf-chat-avatar {
@@ -168,6 +178,42 @@
 .pf-typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .pf-typing-dot:nth-child(2) { animation-delay: -0.16s; }
 @keyframes pf-bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+.pf-message.ai.pf-typing-operator {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 10px 14px;
+}
+
+.pf-operator-typing-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #eef2ff;
+	color: #334155;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.pf-operator-typing-badge .pf-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #2563eb;
+	box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);
+	animation: pf-operator-dot-pulse 1.8s infinite;
+}
+
+@keyframes pf-operator-dot-pulse {
+	0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
+	70% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+	100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
 
 .pf-chat-footer {
 	padding: 14px 16px; background: white;

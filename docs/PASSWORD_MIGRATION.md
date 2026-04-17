@@ -1,0 +1,100 @@
+# Migrazione progressiva da MD5 a bcrypt
+
+**Data:** 17 aprile 2026  
+**Severità:** CRITICO (CRIT-2 dalla security review)
+
+## Problema
+
+Le password admin vengono hashate con MD5 + salt da 2 caratteri hex (formato legacy chatbot).
+MD5 è crittograficamente rotto e il salt così breve è insufficiente per proteggere contro attacchi.
+
+## Soluzione: migrazione progressiva
+
+### Fase 1: Mitigazione immediata (implementata ?)
+
+1. **Validazione lunghezza minima password (? 16 caratteri)**
+   - Introdotta in `AdminAuthManager::authenticate()`
+   - Introdotta anche in `dashboard.php` con messaggio user-friendly
+   - Mitiga l'attacco brute-force su password brevi durante la transizione
+
+2. **Supporto dual-format nei controlli di verifica**
+   - `AdminAuthManager::verifyPassword()` ora supporta sia bcrypt che MD5 legacy
+   - Riconosce automaticamente il formato dall'hash salvato
+   - Nessuna incompatibilità con vecchie password
+
+3. **Upgrade automatico al login (migrazione progressiva)**
+   - Quando un admin con hash MD5 fa login con successo:
+     1. La password viene verificata con il vecchio formato MD5
+     2. Se corretta, viene immediatamente re-hashata a bcrypt (cost=12)
+     3. L'hash aggiornato viene salvato nel database
+     4. Il login procede normalmente
+   - Ogni amministratore viene migrato al momento del suo prossimo login
+   - Log di audit via `Logger::logDebug()` per tracciare gli upgrade
+
+### Nuovi metodi in `AdminAuthManager`
+
+```php
+// Hashare una password al nuovo formato bcrypt
+public static function hashPasswordBcrypt(string $plain): string
+
+// Riconoscere se un hash è nel vecchio formato MD5
+public function isLegacyMd5Hash(string $hash): bool
+
+// Aggiornare il hash nel database
+public function upgradePasswordHash(int $adminId, string $newBcryptHash): void
+```
+
+### Comportamento logico
+
+```
+LOGIN ATTEMPT
+  ?
+Validare lunghezza ? 16 caratteri ?
+  ?
+Verificare credenziali (supporta MD5 + bcrypt) ?
+  ?
+Se credenziali OK:
+  ?? Se hash è MD5 legacy:
+  ?   ?? Rigenerare con bcrypt e salvare nel DB
+  ?? Proceedere al login
+```
+
+### Timeline di completamento
+
+- **Week 1**: Implementazione (? DONE)
+- **Week 2-4**: Rollout graduale
+  - Admin si loggano normalmente
+  - I loro hash vengono aggiornati automaticamente
+- **Week 5**: Verifica che tutti gli hash siano stati migrati
+- **Week 6+**: Considerare l'obbligo di cambio password per chi non si è loggato
+
+## Monitoraggio
+
+Controllare i log per verificare gli upgrade:
+
+```bash
+# Cercare i log di upgrade hash
+grep "upgraded from MD5 to bcrypt" chatbotchat/chatbot_logs/debug*.log
+
+# Conteggiare quanti admin non sono ancora stati migrati
+# (Query SQL sulla tabella admin per hash contenente ":")
+```
+
+## Rollback (se necessario)
+
+Se si scopre un problema prima della migrazione completa:
+1. Disattivare il flag `isLegacyMd5Hash()` nel login
+2. Nessun hash bcrypt sarà sovrascritto se la verifica MD5 è disabilitata
+3. I client con hash MD5 continueranno a funzionare
+
+## Compatibilità
+
+- **PHP 5.5+**: `password_hash()` e `password_verify()` sono disponibili
+- **Vecchie password MD5**: Continuano a funzionare fino all'upgrade
+- **Nuovi admin**: Usare direttamente `hashPasswordBcrypt()`
+
+## Note di sicurezza
+
+- Il cost di bcrypt è impostato a 12 (default PHP 7.4+, buon equilibrio tra sicurezza e velocità)
+- Il salt breve (16 byte derivati da `random_bytes()` interno a `password_hash()`) è crittograficamente sicuro
+- Ogni hash bcrypt contiene il proprio salt incorporato nel formato `$2y$12$...`

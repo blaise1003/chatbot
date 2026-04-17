@@ -41,15 +41,17 @@ class OrderService
 
 		// Sicurezza 2: Validazione email lato Backend
 		if (empty($order_email)) {
+			Logger::logError("getOrderStatus", "Email non fornita per getOrderStatus. Richiesta con email vuota."); // DEBUG LOG
 			return ["success" => false, "error" => "Email non fornita. Richiedi all'utente l'indirizzo email prima di cercare."];
 		}
 
         if ($this->orderApiToken === '') {
-            return null;
+			Logger::logError("getOrderStatus", "Token API non configurato per getOrderStatus. Impossibile procedere."); // DEBUG LOG
+			return ["success" => false, "error" => "Token API non configurato. Impossibile procedere con la richiesta."]; // Mappa errore tecnico a messaggio user-friendly
         }
 
-		Logger::logDebug("getOrderStatus", "Richiesta getOrderStatus per orderId=$orderId, email=$order_email, testMode=" . ($testMode ? "ON" : "OFF")); // DEBUG LOG
         if ($testMode) {
+			Logger::logDebug("getOrderStatus", "Test mode attivo: restituisco ordine di test per orderId=$orderId, email=$order_email"); // DEBUG LOG
             $orders = $this->getTestOrders();
 			$order = isset($orders[$orderId]) ? $orders[$orderId] : null;
             return $order;
@@ -64,7 +66,6 @@ class OrderService
         if (!empty($customer_session)) {
             $validation = $this->validateCustomerSession($order_email, $customer_session, $orderId);
 
-			Logger::logDebug("getOrderStatus", "Risultato validazione sessione esterna con ordine=$orderId, email=$order_email: " . json_encode($validation)); // DEBUG LOG
 
             if (!$validation['valid']) {
                 // Mappatura errori Oct8ne a messaggi user-friendly
@@ -73,7 +74,7 @@ class OrderService
                     return ["success" => false, "error" => "L'email fornita non corrisponde a nessun account. Verifica di aver scritto l'email corretta."];
                 }
                 if (strpos($err, 'Invalid session') !== false) {
-                    return ["success" => false, "error" => "La sessione non è valida. Assicurati di essere loggato su Pexampleit e riprova."];
+                    return ["success" => false, "error" => "La sessione non è valida. Assicurati di essere loggato su Pchatbotit e riprova."];
                 }
                 if (strpos($err, 'Invalid Order') !== false) {
                     return ["success" => false, "error" => "L'ordine $orderId non corrisponde all'email fornita. Verifica i dati inseriti."];
@@ -81,8 +82,11 @@ class OrderService
                 return ["success" => false, "error" => "Validazione fallita: $err"];
             }
 
-            Logger::logError("getOrderStatus", "[PF-Bot] checkSession OK per email=$order_email, ordine=$orderId");
-        }
+        } else {
+			return ["success" => false, "error" => "Utente non loggato. Richiedi all'utente di effettuare la login prima di richiedere le informazioni di un ordine."];
+		}
+
+		// STEP 2: Chiamata API ordine
 
 		$urlParams = http_build_query([
 			'reference' 	=> $orderId,
@@ -93,8 +97,6 @@ class OrderService
 
 
         $url = $this->orderApiUrl . '?' . $urlParams;
-
-		Logger::logDebug("getOrderStatus", "Chiamata API getOrderStatus per orderId=$orderId, email=$order_email tramite URL: $url"); // DEBUG LOG
         
 		$ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -103,8 +105,6 @@ class OrderService
         curl_close($ch);
 
         $raw_data = $response ? json_decode($response, true) : null;
-
-		Logger::logDebug("getOrderStatus", "Risposta API getOrderStatus per orderId=$orderId, email=$order_email: " . json_encode($raw_data, JSON_UNESCAPED_UNICODE)); // DEBUG LOG
 
 		// SICUREZZA 4: SANITIZZAZIONE DATI ORDINE CONTRO XSS
 		if ($raw_data && (!isset($raw_data['success']) || $raw_data['success'] !== false)) {
@@ -135,7 +135,6 @@ class OrderService
 			}
 		}
 
-		Logger::logDebug("getOrderStatus", "Dati finali ordine sanitizzati per orderId=$orderId, email=$order_email: " . json_encode($raw_data, JSON_UNESCAPED_UNICODE)); // DEBUG LOG
 		return $raw_data;
     }
 
@@ -143,14 +142,17 @@ class OrderService
 
 		// Sicurezza 2: Validazione email lato Backend
 		if (empty($order_email)) {
+			Logger::logError("getOrdersList", "Email non fornita per getOrdersList. Richiesta con email vuota."); // DEBUG LOG
 			return ["success" => false, "error" => "Email non fornita. Richiedi all'utente l'indirizzo email prima di cercare."];
 		}
 
         if ($this->orderApiToken === '') {
+			Logger::logError("getOrdersList", "Token API non configurato per getOrdersList. Impossibile procedere."); // DEBUG LOG
             return null;
         }
 
         if ($testMode) {
+			Logger::logDebug("getOrdersList", "Test mode attivo: restituisco ordini di test per email=$order_email"); // DEBUG LOG
             $orders = $this->getTestOrders();
             return $orders;
         }
@@ -241,7 +243,7 @@ class OrderService
                     ['quantity' => 1, 'name' => 'Frigorifero Combinato LG GBB62PZFGN 384L Classe D']
                 ],
                 'comments' => [
-                    ['message' => 'Ordine consegnato con successo il 15-03-2026. Grazie per aver scelto example!']
+                    ['message' => 'Ordine consegnato con successo il 15-03-2026. Grazie per aver scelto chatbot!']
                 ]
             ],
             '1000004' => [
@@ -315,7 +317,6 @@ class OrderService
 
         $url = $this->checkSessionApiUrl . '?' . $params;
 
-		Logger::logDebug("validateCustomerSession", "Validazione sessione per email=$customer_email, order_id=$order_id tramite URL: $url"); // DEBUG LOG
 
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

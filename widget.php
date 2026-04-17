@@ -5,8 +5,7 @@
 // il contenuto di widget/widget.html con gli header corretti.
 // ============================================================
 
-function load_chatbot_config()
-{
+function load_chatbot_config() {
     $configPath = dirname(__FILE__) . '/chatbot_config.php';
     if (file_exists($configPath)) {
         require_once $configPath;
@@ -18,8 +17,7 @@ function load_chatbot_config()
 
 load_chatbot_config();
 
-function get_widget_token_secret()
-{
+function get_widget_token_secret() {
     if (defined('CHATBOT_WIDGET_DYNAMIC_SECRET') && trim((string) CHATBOT_WIDGET_DYNAMIC_SECRET) !== '') {
         return trim((string) CHATBOT_WIDGET_DYNAMIC_SECRET);
     }
@@ -31,8 +29,7 @@ function get_widget_token_secret()
     return '';
 }
 
-function is_valid_dynamic_widget_token($token, $secret)
-{
+function is_valid_dynamic_widget_token($token, $secret) {
     $token = trim((string) $token);
     $secret = trim((string) $secret);
     if ($token === '' || $secret === '') {
@@ -45,7 +42,7 @@ function is_valid_dynamic_widget_token($token, $secret)
     }
 
     $parts = explode('.', $token);
-    if (count($parts) !== 4) {
+    if (count($parts) !== 5) {
         return false;
     }
 
@@ -55,7 +52,8 @@ function is_valid_dynamic_widget_token($token, $secret)
 
     $expiresAt = $parts[1];
     $nonce = $parts[2];
-    $signature = $parts[3];
+	$tokenDomain = $parts[3];
+    $signature = $parts[4];
     if (!ctype_digit($expiresAt)) {
         return false;
     }
@@ -67,6 +65,19 @@ function is_valid_dynamic_widget_token($token, $secret)
     if (!preg_match('/^[A-Za-z0-9_-]{20,128}$/', $signature)) {
         return false;
     }
+
+	// Validare tokenDomain: è un hash SHA256 di uno degli allowed origins
+	$allowedOrigins = defined('CHATBOT_ALLOWED_ORIGINS') ? CHATBOT_ALLOWED_ORIGINS : [];
+	$tokenDomainValid = false;
+	foreach ($allowedOrigins as $origin) {
+		if (hash_equals(hash('sha256', (string) $origin), $tokenDomain)) {
+			$tokenDomainValid = true;
+			break;
+		}
+	}
+	if (!$tokenDomainValid) {
+		return false;
+	}
 
     $now = time();
     $exp = (int) $expiresAt;
@@ -87,8 +98,7 @@ function is_valid_dynamic_widget_token($token, $secret)
     return hash_equals($expectedSignature, $signature);
 }
 
-function is_valid_widget_token($token)
-{
+function is_valid_widget_token($token) {
     $token = trim((string) $token);
     if ($token === '') {
         return false;
@@ -116,11 +126,13 @@ $origin_host = parse_url($origin, PHP_URL_HOST) ?? '';
 $origin = $origin_scheme . '://' . $origin_host;
 $origin = rtrim($origin, '/'); // Rimuove trailing slash per confronto più flessibile
 $allowedOrigins = defined('CHATBOT_ALLOWED_ORIGINS') ? CHATBOT_ALLOWED_ORIGINS : [];
+
 if ($origin !== '' && !in_array($origin, $allowedOrigins, true)) {
-	echo "Origin non consentito: $origin\n";
-    http_response_code(403);
+	// echo "Origin non consentito: $origin\n";
+    http_response_code(406);
     exit;
 }
+
 if ($origin !== '') {
     header('Access-Control-Allow-Origin: ' . $origin);
     header('Vary: Origin');
@@ -159,4 +171,6 @@ header('Cache-Control: no-store');
 $htmlFile = str_replace('<EXT_SESSION_ID>', EXT_SESSION_ID, file_get_contents($htmlFile));
 $htmlFile = str_replace('<CHATBOT_WIDGET_TOKEN>', $token, $htmlFile);
 $htmlFile = str_replace('<CUSTOMER_ID>', CUSTOMER_ID, $htmlFile);
+$htmlFile = str_replace('<TIMESTAMP>', time(), $htmlFile);
+
 echo $htmlFile;

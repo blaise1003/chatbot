@@ -1,4 +1,4 @@
-# Guida Integrazione Widget Assistente
+# Guida Integrazione Widget getty
 
 Ultimo aggiornamento: 10-04-2026
 
@@ -21,9 +21,9 @@ Nel progetto org il caricamento e centralizzato in org/includes/getty_widget.php
 
 Costanti usate lato org:
 
-- GETTY_CHATBOT_URL
-- GETTY_CHATBOT_DYNAMIC_SECRET
-- GETTY_CHATBOT_TOKEN_TTL
+- getty_CHATBOT_URL
+- getty_CHATBOT_DYNAMIC_SECRET
+- getty_CHATBOT_TOKEN_TTL
 
 ## Parametri attesi da widget.php
 
@@ -36,7 +36,7 @@ Costanti usate lato org:
 ```php
 $prefix = 'pfw1';
 $ttl = 900;
-$secret = GETTY_CHATBOT_DYNAMIC_SECRET;
+$secret = getty_CHATBOT_DYNAMIC_SECRET;
 
 $exp = time() + $ttl;
 $nonce = hash('sha256', uniqid('', true) . microtime(true));

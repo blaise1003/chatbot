@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types=1);
+//declare(strict_types=1);
 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+// ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
 
 $configCandidates = [
 	__DIR__ . '/chatbot_config.php',
@@ -29,7 +29,7 @@ use Chatbot\RedisStorage;
 $host = defined('CHATBOT_REDIS_HOST') ? (string) CHATBOT_REDIS_HOST : '127.0.0.1';
 $port = defined('CHATBOT_REDIS_PORT') ? (int) CHATBOT_REDIS_PORT : 6379;
 $password = defined('CHATBOT_REDIS_PASSWORD') ? (string) CHATBOT_REDIS_PASSWORD : '';
-$prefix = defined('CHATBOT_REDIS_PREFIX') ? (string) CHATBOT_REDIS_PREFIX : 'prezzy:';
+$prefix = defined('CHATBOT_REDIS_PREFIX') ? (string) CHATBOT_REDIS_PREFIX : 'getty:';
 $ttl = defined('CHATBOT_REDIS_TTL') ? (int) CHATBOT_REDIS_TTL : 3600;
 
 $demoSessionId = 'demo_session_redis';
@@ -128,21 +128,31 @@ if ($storageAvailable) {
 			$demoMessages[] = 'Sessione demo letta tramite RedisStorage::loadHistory().';
 		}
 
-		if ($action === 'rate-limit') {
-			for ($attempt = 1; $attempt <= 15; $attempt++) {
-				sleep(5);
-				$blocked = $storage->checkRateLimit($demoRateKey, 10, 60);
-				$rateSnapshots[] = [
-					'attempt' => $attempt,
-					'status' => $blocked ? 'BLOCCATA' : 'CONSENTITA',
-				];
-			}
-			$demoMessages[] = 'Simulazione sliding-window completata: limite 3 richieste in 60 secondi.';
+		// if ($action === 'rate-limit') {
+		// 	for ($attempt = 1; $attempt <= 15; $attempt++) {
+		// 		sleep(5);
+		// 		$blocked = $storage->checkRateLimit($demoRateKey, 10, 60);
+		// 		$rateSnapshots[] = [
+		// 			'attempt' => $attempt,
+		// 			'status' => $blocked ? 'BLOCCATA' : 'CONSENTITA',
+		// 		];
+		// 	}
+		// 	$demoMessages[] = 'Simulazione sliding-window completata: limite 3 richieste in 60 secondi.';
+		// }
+
+		if ($action === 'cleanup-demo' && $nativeRedis instanceof Redis && $nativeConnectionOk) {
+			$nativeRedis->del($demoSessionKey, $demoRateRedisKey);
+			$demoMessages[] = 'Chiavi demo Redis eliminate.';
 		}
 
 		if ($action === 'cleanup' && $nativeRedis instanceof Redis && $nativeConnectionOk) {
-			$nativeRedis->del($demoSessionKey, $demoRateRedisKey);
-			$demoMessages[] = 'Chiavi demo Redis eliminate.';
+			$sessionKey = $prefix . 'sess:';
+			$rateRedisKey = $prefix . 'rl';
+			$alSessionKeys = $nativeRedis->keys($sessionKey . '*');
+			$nativeRedis->del($alSessionKeys);
+			$alRateKeys = $nativeRedis->keys($rateRedisKey . '*');
+			$nativeRedis->del($alRateKeys);
+			$demoMessages[] = 'Chiavi tutte Redis eliminate.';
 		}
 
 		if ($action === 'scan-all' && $nativeRedis instanceof Redis && $nativeConnectionOk) {
@@ -188,7 +198,7 @@ if ($storageAvailable) {
 					$encoded = '[Impossibile serializzare il valore]';
 				}
 
-				$isSessionKey = strpos($key, 'prezzy:sess:') === 0;
+				$isSessionKey = strpos($key, 'getty:sess:') === 0;
 				$historyRows = [];
 				if ($isSessionKey && is_array($value)) {
 					foreach ($value as $row) {
@@ -251,7 +261,7 @@ function badge(bool $value): string
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Demo Redis Prezzy</title>
+	<title>Demo Redis getty</title>
 	<link rel="stylesheet" href="css/admin-base.css">
 	<link rel="stylesheet" href="css/admin-menu.css">
 	<link rel="stylesheet" href="css/admin-header.css">
@@ -308,15 +318,16 @@ function badge(bool $value): string
 		<div class="actions">
 			<a class="btn" href="?action=save-session">Salva sessione demo</a>
 			<a class="btn" href="?action=load-session">Leggi sessione demo</a>
-			<a class="btn" href="?action=rate-limit">Simula rate limit</a>
-			<a class="btn secondary" href="?action=cleanup">Pulisci chiavi demo</a>
+			<!-- <a class="btn" href="?action=rate-limit">Simula rate limit</a> -->
+			<a class="btn secondary" href="?action=cleanup-demo">Pulisci chiavi demo</a>
+			<a class="btn secondary" href="?action=cleanup">Pulisci tutte le chiavi</a>
 			<a class="btn secondary" href="?action=scan-all&amp;pattern=*">Vedi tutte le chiavi Redis</a>
 			<a class="btn secondary" href="?action=overview">Reset vista</a>
 		</div>
 
 		<div class="panel">
 			<h3>Esplora chiavi Redis</h3>
-			<p>Usa un pattern Redis SCAN (esempi: <strong>*</strong>, <strong>prezzy:*</strong>, <strong>*sess:*</strong>).</p>
+			<p>Usa un pattern Redis SCAN (esempi: <strong>*</strong>, <strong>getty:*</strong>, <strong>*sess:*</strong>).</p>
 			<form method="get" class="actions compact">
 				<input type="hidden" name="action" value="scan-all">
 				<input type="text" class="input-compact" name="pattern" value="<?= h($scanPattern) ?>">
@@ -344,7 +355,7 @@ function badge(bool $value): string
 
 		<div class="panel">
 			<h3>Session storage</h3>
-			<p>La demo salva un array `history` come JSON con `SETEX`, esattamente come fa `RedisStorage::saveHistory()` nel progetto.</p>
+			<p>La demo salva un array `history` come JSON con `SETEX` (Set the string value in argument as value of the key, with a time to live.), esattamente come fa `RedisStorage::saveHistory()` nel progetto.</p>
 			<div class="label">TTL corrente della sessione demo</div>
 			<div class="value"><?= h($sessionTtl === null ? 'N/D' : (string) $sessionTtl) ?></div>
 			<div class="label mt-12">Payload raw in Redis</div>
@@ -353,7 +364,7 @@ function badge(bool $value): string
 			<pre><?= h(json_encode($loadedHistory, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre>
 		</div>
 
-		<div class="panel">
+		<!-- <div class="panel">
 			<h3>Sliding-window rate limit</h3>
 			<p>La simulazione usa `ZADD + ZREMRANGEBYSCORE + ZCARD`, lo stesso meccanismo usato dal chatbot per limitare le richieste per IP.</p>
 			<?php if (empty($rateSnapshots)): ?>
@@ -376,7 +387,7 @@ function badge(bool $value): string
 				</tbody>
 			</table>
 			<?php endif; ?>
-		</div>
+		</div> -->
 
 		<?php if ($action === 'scan-all'): ?>
 		<div class="panel">

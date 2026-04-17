@@ -12,7 +12,7 @@ class ApplicationBootstrap
             (string) self::constantValue('CHATBOT_REDIS_HOST', '127.0.0.1'),
             (int)    self::constantValue('CHATBOT_REDIS_PORT', 6379),
             (string) self::constantValue('CHATBOT_REDIS_PASSWORD', ''),
-            (string) self::constantValue('CHATBOT_REDIS_PREFIX', 'chatbot:'),
+            (string) self::constantValue('CHATBOT_REDIS_PREFIX', 'getty:'),
             (int)    self::constantValue('CHATBOT_REDIS_TTL', 1800)
         );
 
@@ -34,6 +34,12 @@ class ApplicationBootstrap
             $redisStorage,
             $mysqlStorage,
             $trafficLimiter
+        );
+
+        $handoffManager = new HandoffManager(
+            (string) self::constantValue('CHATBOT_SESSION_DIR', ''),
+            $redisStorage,
+            $mysqlStorage
         );
 
         $productSearchService = new ProductSearchService(
@@ -59,7 +65,8 @@ class ApplicationBootstrap
             $productSearchService,
             $orderService,
             $htmlSanitizer,
-            $trafficLimiter
+            $trafficLimiter,
+            $handoffManager
         );
     }
 

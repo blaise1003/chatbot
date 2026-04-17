@@ -30,3 +30,16 @@ body.login-body {
     color: #a01d18;
     font-weight: 700;
 }
+
+button.login-button {
+	width: 100%;
+	padding: 10px;
+	background: #4d3926;
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	font-size: 16px;
+	cursor: pointer;
+	position: relative;
+	margin-top: 10px;
+}

@@ -1,12 +1,8 @@
 <?php
 
-declare(strict_types=1);
+//declare(strict_types=1);
 
 session_start();
-
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
 
 $configCandidates = [
     __DIR__ . '/chatbot_config.php',
@@ -673,11 +669,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['run_load_test']) || 
 
                     <div class="grid grid-4">
                         <div>
-                            <label class="label" for="requests">Numero richieste</label>
+                            <label class="label" for="requests">Numero richieste (# richieste totali)</label>
                             <input id="requests" name="requests" type="number" min="1" max="500" value="<?= (int) $requests ?>">
                         </div>
                         <div>
-                            <label class="label" for="concurrency">Concorrenza</label>
+                            <label class="label" for="concurrency">Concorrenza (# richieste asincrone in parallelo)</label>
                             <input id="concurrency" name="concurrency" type="number" min="1" max="100" value="<?= (int) $concurrency ?>">
                         </div>
                         <div>
@@ -687,8 +683,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['run_load_test']) || 
                         <div>
                             <label class="label" for="scenario">Scenario</label>
                             <select id="scenario" name="scenario">
-                                <option value="full_chat" <?= $scenario === 'full_chat' ? 'selected' : '' ?>>full_chat</option>
-                                <option value="ingress_only" <?= $scenario === 'ingress_only' ? 'selected' : '' ?>>ingress_only</option>
+                                <option value="full_chat" <?= $scenario === 'full_chat' ? 'selected' : '' ?>>full chat</option>
+                                <option value="ingress_only" <?= $scenario === 'ingress_only' ? 'selected' : '' ?>>ingress only</option>
                             </select>
                         </div>
                     </div>
@@ -701,13 +697,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['run_load_test']) || 
                     </div>
 
                     <div>
-                        <label class="label" for="message">Messaggio (usato nello scenario full_chat)</label>
+                        <label class="label" for="message">Messaggio (usato nello scenario "full chat")</label>
                         <textarea id="message" name="message" rows="3"><?= h($message) ?></textarea>
                     </div>
 
                     <div class="row">
                         <button class="btn" type="submit" name="run_load_test" value="1">Avvia Load Test</button>
-                        <button class="btn secondary" type="submit" name="execute_preset" value="1">Esegui preset</button>
+                        <button class="btn secondary" type="submit" name="execute_preset" value="1">Applica preset</button>
                     </div>
                 </form>
             </section>
@@ -727,7 +723,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['run_load_test']) || 
                         <div class="kpi"><?= (int) $result['rateLimit429'] ?></div>
                     </article>
                     <article class="card">
-                        <h3>Hint provider limit</h3>
+                        <h3>Hint provider limit (claude limit exceeded)</h3>
                         <div class="kpi"><?= (int) $result['providerLimitHints'] ?></div>
                     </article>
                     <article class="card">

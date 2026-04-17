@@ -1,4 +1,4 @@
-# Deploy Checklist Chatbot example
+# Deploy Checklist Chatbot chatbot
 
 Ultimo aggiornamento: 10-04-2026
 
@@ -25,7 +25,7 @@ Ultimo aggiornamento: 10-04-2026
 5. Chatbot/.htaccess
 6. Chatbot/classes/ (completa)
 7. Chatbot/widget/ (completa)
-8. examplechat/migration.sql (utile per bootstrap DB)
+8. chatbotchat/migration.sql (utile per bootstrap DB)
 
 ## 3) Verifiche tecniche immediate
 

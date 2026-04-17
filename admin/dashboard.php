@@ -1,12 +1,9 @@
 <?php
 
-declare(strict_types=1);
+//declare(strict_types=1);
 
 session_start();
 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
 
 $configCandidates = [
     __DIR__ . '/chatbot_config.php',
@@ -23,18 +20,34 @@ foreach ($configCandidates as $configPath) {
 require_once __DIR__ . '/views/_admin_menu.php';
 require_once __DIR__ . '/views/_admin_header.php';
 
+
+spl_autoload_register(function (string $className): void {
+    $prefix = 'Chatbot\\';
+    if (strpos($className, $prefix) !== 0) {
+        return;
+    }
+    $relative = substr($className, strlen($prefix));
+    $base = dirname(__DIR__) . '/classes/';
+    foreach ([$base . $relative . '.php', $base . 'storage/' . $relative . '.php'] as $candidate) {
+        if (file_exists($candidate)) {
+            require_once $candidate;
+            return;
+        }
+    }
+});
+
+$handoffClassPath = dirname(__DIR__) . '/classes/HandoffManager.php';
+if (is_file($handoffClassPath)) {
+    require_once $handoffClassPath;
+}
+
+$loggerClassPath = dirname(__DIR__) . '/classes/Logger.php';
+if (is_file($loggerClassPath)) {
+    require_once $loggerClassPath;
+}
 function h(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-
-function dashboard_password(): string
-{
-    if (defined('DASHBOARD_PASSWORD') && is_string(DASHBOARD_PASSWORD) && DASHBOARD_PASSWORD !== '') {
-        return DASHBOARD_PASSWORD;
-    }
-
-    return 'change-me';
 }
 
 function mysql_config(): array
@@ -45,6 +58,136 @@ function mysql_config(): array
         'password' => defined('CHATBOT_MYSQL_PASSWORD') ? (string) CHATBOT_MYSQL_PASSWORD : '',
         'table' => defined('CHATBOT_MYSQL_TABLE') ? (string) CHATBOT_MYSQL_TABLE : 'chatbot_conversations',
     ];
+}
+
+function admin_login_client_ip(): string
+{
+    $remoteAddr = isset($_SERVER['REMOTE_ADDR']) ? trim((string) $_SERVER['REMOTE_ADDR']) : '';
+    return $remoteAddr !== '' ? $remoteAddr : 'unknown';
+}
+
+function admin_login_limits_config(): array
+{
+    return [
+        'max_attempts' => defined('CHATBOT_ADMIN_LOGIN_MAX_ATTEMPTS')
+            ? max(3, (int) CHATBOT_ADMIN_LOGIN_MAX_ATTEMPTS)
+            : 5,
+        'window_seconds' => defined('CHATBOT_ADMIN_LOGIN_WINDOW_SECONDS')
+            ? max(60, (int) CHATBOT_ADMIN_LOGIN_WINDOW_SECONDS)
+            : 900,
+        'lockout_seconds' => defined('CHATBOT_ADMIN_LOGIN_LOCKOUT_SECONDS')
+            ? max(60, (int) CHATBOT_ADMIN_LOGIN_LOCKOUT_SECONDS)
+            : 900,
+    ];
+}
+
+function admin_login_lock_storage_dir(): string
+{
+    $baseDir = defined('CHATBOT_SESSION_DIR') ? (string) CHATBOT_SESSION_DIR : sys_get_temp_dir();
+    $baseDir = rtrim($baseDir, '/');
+    if ($baseDir === '') {
+        $baseDir = sys_get_temp_dir();
+    }
+
+    return $baseDir . '/admin_login_limits';
+}
+
+function admin_login_lock_key(string $scope, string $identifier): string
+{
+    return hash('sha256', $scope . ':' . trim($identifier));
+}
+
+function admin_login_lock_file_path(string $scope, string $identifier): string
+{
+    return admin_login_lock_storage_dir() . '/' . admin_login_lock_key($scope, $identifier) . '.json';
+}
+
+function admin_login_read_state(string $scope, string $identifier): array
+{
+    $path = admin_login_lock_file_path($scope, $identifier);
+    if (!is_file($path)) {
+        return ['attempts' => [], 'locked_until' => 0];
+    }
+
+    $decoded = json_decode((string) file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        return ['attempts' => [], 'locked_until' => 0];
+    }
+
+    $attempts = isset($decoded['attempts']) && is_array($decoded['attempts']) ? $decoded['attempts'] : [];
+    $lockedUntil = isset($decoded['locked_until']) ? (int) $decoded['locked_until'] : 0;
+
+    return [
+        'attempts' => $attempts,
+        'locked_until' => $lockedUntil,
+    ];
+}
+
+function admin_login_write_state(string $scope, string $identifier, array $state): void
+{
+    $storage = new \Chatbot\FileStorage(admin_login_lock_storage_dir());
+    $storage->ensureDirectory(admin_login_lock_storage_dir(), 0700);
+    $storage->writeJson(admin_login_lock_file_path($scope, $identifier), $state);
+}
+
+function admin_login_clear_state(string $scope, string $identifier): void
+{
+    $path = admin_login_lock_file_path($scope, $identifier);
+    if (is_file($path)) {
+        @unlink($path);
+    }
+}
+
+function admin_login_register_failure(string $scope, string $identifier): void
+{
+    $config = admin_login_limits_config();
+    $state = admin_login_read_state($scope, $identifier);
+    $now = time();
+    $windowStart = $now - $config['window_seconds'];
+
+    $attempts = array_values(array_filter($state['attempts'], function ($timestamp) use ($windowStart) {
+        return is_int($timestamp) && $timestamp >= $windowStart;
+    }));
+
+    $attempts[] = $now;
+    $lockedUntil = 0;
+    if (count($attempts) >= $config['max_attempts']) {
+        $lockedUntil = $now + $config['lockout_seconds'];
+        $attempts = [];
+    }
+
+    admin_login_write_state($scope, $identifier, [
+        'attempts' => $attempts,
+        'locked_until' => $lockedUntil,
+    ]);
+}
+
+function admin_login_lock_remaining(string $scope, string $identifier): int
+{
+    $state = admin_login_read_state($scope, $identifier);
+    $now = time();
+    $lockedUntil = isset($state['locked_until']) ? (int) $state['locked_until'] : 0;
+    if ($lockedUntil <= $now) {
+        return 0;
+    }
+
+    return $lockedUntil - $now;
+}
+
+function admin_login_is_locked(string $scope, string $identifier): bool
+{
+    return admin_login_lock_remaining($scope, $identifier) > 0;
+}
+
+function admin_login_format_wait(int $seconds): string
+{
+    $seconds = max(0, $seconds);
+    if ($seconds < 60) {
+        return $seconds . ' secondi';
+    }
+
+    $minutes = (int) ceil($seconds / 60);
+    return $minutes . ' minuti';
 }
 
 function csrf_token(): string
@@ -275,19 +418,112 @@ function build_prompt_suggestions(array $conversations): array
 $authError = '';
 $flash = '';
 
+$loginClientIp = admin_login_client_ip();
+$loginEmailIdentifier = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
+$loginEmailLockKey = $loginEmailIdentifier !== '' ? strtolower($loginEmailIdentifier) : '';
+
 if (isset($_POST['login'])) {
     verify_csrf_or_die();
-    $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
-    if (hash_equals(dashboard_password(), $password)) {
-        $_SESSION['dashboard_auth'] = true;
-        header('Location: dashboard.php');
-        exit;
+
+    $loginEmail    = isset($_POST['email'])    ? trim((string) $_POST['email'])    : '';
+    $loginPassword = isset($_POST['password']) ? trim((string) $_POST['password']) : '';
+    $loginEmailLockKey = $loginEmail !== '' ? strtolower($loginEmail) : '';
+
+    $ipLockRemaining = admin_login_lock_remaining('ip', $loginClientIp);
+    $emailLockRemaining = $loginEmailLockKey !== ''
+        ? admin_login_lock_remaining('email', $loginEmailLockKey)
+        : 0;
+    $lockRemaining = max($ipLockRemaining, $emailLockRemaining);
+
+    if ($lockRemaining > 0) {
+        $authError = 'Troppi tentativi di accesso falliti. Riprova tra ' . admin_login_format_wait($lockRemaining) . '.';
+    } else if (mb_strlen($loginPassword) < 8) {
+        // Validazione minima lunghezza password (protezione durante transizione MD5 ? bcrypt)
+        $authError = 'Password insufficiente. Per motivi di sicurezza, usa almeno 8 caratteri.';
+        admin_login_register_failure('ip', $loginClientIp);
+        if ($loginEmailLockKey !== '') {
+            admin_login_register_failure('email', $loginEmailLockKey);
+        }
+    } else {
+
+        $cfg = mysql_config();
+        $loginPdo = null;
+        if ($cfg['dsn'] !== '') {
+            try {
+                $loginPdo = new PDO($cfg['dsn'], $cfg['user'], $cfg['password'], [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_TIMEOUT            => 3,
+                ]);
+            } catch (\Throwable $e) {
+                $loginPdo = null;
+            }
+        }
+
+        $adminRow = null;
+        $auth = null;
+        if ($loginPdo !== null) {
+            $auth = new \Chatbot\AdminAuthManager($loginPdo);
+            $adminRow = $auth->authenticate($loginEmail, $loginPassword);
+            if ($adminRow !== null) {
+                $auth->recordLogin((int) $adminRow['admin_id']);
+            }
+        }
+
+        if ($adminRow !== null) {
+            // Upgrade hash da MD5 a bcrypt se necessario (migrazione progressiva)
+            if ($auth !== null) {
+                $currentHash = $adminRow['admin_password'] ?? '';
+                if ($currentHash !== '' && $auth->isLegacyMd5Hash($currentHash)) {
+                    try {
+                        $newBcryptHash = \Chatbot\AdminAuthManager::hashPasswordBcrypt($loginPassword);
+                        $auth->upgradePasswordHash((int) $adminRow['admin_id'], $newBcryptHash);
+                        // Log l'upgrade per audit
+                        \Chatbot\Logger::logDebug('AdminAuthManager', "Password hash upgraded from MD5 to bcrypt for admin_id " . $adminRow['admin_id']);
+                    } catch (\Throwable $e) {
+                        // Silenzioso, il login continua comunque
+                        \Chatbot\Logger::logError('AdminAuthManager', 'Password hash upgrade failed: ' . $e->getMessage());
+                    }
+                }
+            }
+
+            admin_login_clear_state('ip', $loginClientIp);
+            if ($loginEmailLockKey !== '') {
+                admin_login_clear_state('email', $loginEmailLockKey);
+            }
+            session_regenerate_id(true);
+            $_SESSION['dashboard_auth']     = true;
+            $_SESSION['dashboard_operator'] = trim(
+                ($adminRow['admin_firstname'] ?? '') . ' ' . ($adminRow['admin_lastname'] ?? '')
+            );
+            if ($_SESSION['dashboard_operator'] === '') {
+                $_SESSION['dashboard_operator'] = $loginEmail;
+            }
+            header('Location: dashboard.php');
+            exit;
+        }
+
+        admin_login_register_failure('ip', $loginClientIp);
+        if ($loginEmailLockKey !== '') {
+            admin_login_register_failure('email', $loginEmailLockKey);
+        }
+
+        $remainingAfterFailure = max(
+            admin_login_lock_remaining('ip', $loginClientIp),
+            $loginEmailLockKey !== '' ? admin_login_lock_remaining('email', $loginEmailLockKey) : 0
+        );
+
+        if ($remainingAfterFailure > 0) {
+            $authError = 'Accesso temporaneamente bloccato dopo troppi tentativi falliti. Riprova tra ' . admin_login_format_wait($remainingAfterFailure) . '.';
+        } else {
+            $authError = 'Credenziali non valide.';
+        }
     }
-    $authError = 'Password non valida.';
 }
 
 if (isset($_GET['logout'])) {
     $_SESSION['dashboard_auth'] = false;
+    $_SESSION['dashboard_operator'] = '';
     header('Location: dashboard.php');
     exit;
 }
@@ -309,11 +545,12 @@ if (!$isAuthenticated):
 <div class="login-wrap">
     <form method="post" class="login-card">
         <h1>Dashboard Chatbot</h1>
-        <p>Accedi con la password amministrativa.</p>
+        <p>Accedi con email e password del tuo account amministratore.</p>
         <?php if ($authError !== ''): ?><div class="login-error"><?= h($authError) ?></div><?php endif; ?>
         <input type="hidden" name="csrf" value="<?= h(csrf_token()) ?>">
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit" name="login" value="1">Accedi</button>
+        <input type="email" name="email" placeholder="Email" required autocomplete="username" style="display:block;width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:15px;">
+        <input type="password" name="password" placeholder="Password" required autocomplete="current-password" style="display:block;width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:15px;">
+        <button class="login-button" type="submit" name="login" value="1">Accedi</button>
     </form>
 </div>
 </body>
@@ -333,6 +570,27 @@ if ($table === '') {
 
 $pdo = null;
 $connectionError = '';
+$handoffMap = [];
+$handoffRequestedCount = 0;
+$handoffClaimedCount = 0;
+
+if (class_exists('\\Chatbot\\HandoffManager')) {
+    $sessionDir = defined('CHATBOT_SESSION_DIR') ? (string) CHATBOT_SESSION_DIR : dirname(__DIR__, 3) . '/chatbot_sessions';
+    $handoffManager = new \Chatbot\HandoffManager($sessionDir);
+    $activeHandoffs = $handoffManager->listActive();
+    foreach ($activeHandoffs as $handoffState) {
+        $sid = isset($handoffState['session_id']) ? (string) $handoffState['session_id'] : '';
+        if ($sid !== '') {
+            $handoffMap[$sid] = $handoffState;
+        }
+        $status = isset($handoffState['status']) ? (string) $handoffState['status'] : 'none';
+        if ($status === 'requested') {
+            $handoffRequestedCount++;
+        } elseif ($status === 'claimed') {
+            $handoffClaimedCount++;
+        }
+    }
+}
 
 if ($dsn === '') {
     $connectionError = 'MySQL disabilitato: CHATBOT_MYSQL_DSN e vuoto.';
@@ -637,6 +895,12 @@ function page_url(int $targetPage, string $q, string $statsWord): string
 
     <?php if ($flash !== ''): ?><div class="flash"><?= h($flash) ?></div><?php endif; ?>
     <?php if ($connectionError !== ''): ?><div class="err"><?= h($connectionError) ?></div><?php endif; ?>
+    <?php if ($handoffRequestedCount > 0 || $handoffClaimedCount > 0): ?>
+        <div class="flash">
+            Handoff umano attivo: richieste in coda <?= h((string) $handoffRequestedCount) ?>, sessioni in carico <?= h((string) $handoffClaimedCount) ?>.
+            <a href="handoff_queue.php">Apri Handoff Queue</a>
+        </div>
+    <?php endif; ?>
 
     <?php if ($pdo instanceof PDO): ?>
     <div class="grid dashboard-kpi-grid">
@@ -707,13 +971,20 @@ function page_url(int $targetPage, string $q, string $statsWord): string
                     <th>Messaggi</th>
                     <th>Flush Reason</th>
                     <th>Operatore</th>
+                    <th>Handoff</th>
                     <th>Azioni</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($rows as $row): ?>
                 <?php $rowHistory = parse_history((string) $row['history']); ?>
-                <tr>
+                <?php
+                    $sessionKey = (string) $row['session_id'];
+                    $handoffState = isset($handoffMap[$sessionKey]) ? $handoffMap[$sessionKey] : null;
+                    $handoffStatus = is_array($handoffState) ? (string) ($handoffState['status'] ?? 'none') : 'none';
+                    $rowStyle = in_array($handoffStatus, ['requested', 'claimed'], true) ? ' style="background:#fff7ed;"' : '';
+                ?>
+                <tr<?= $rowStyle ?>>
                     <td><?= h((string) $row['id']) ?></td>
                     <td><span class="pill"><?= h((string) $row['session_id']) ?></span></td>
                     <td><?= h((string) $row['started_at']) ?></td>
@@ -722,6 +993,7 @@ function page_url(int $targetPage, string $q, string $statsWord): string
                     <td><?= h((string) $row['message_count']) ?></td>
                     <td><?= h((string) $row['last_flush_reason']) ?></td>
                     <td><?= contains_operator_handoff($rowHistory) ? 'SI' : 'NO' ?></td>
+                    <td><?= h(strtoupper($handoffStatus)) ?></td>
                     <td>
                         <button class="btn secondary btn-view js-view-conversation" type="button" data-id="<?= h((string) $row['id']) ?>" data-default-label="Visualizza">
                             <span class="btn-view-label">Visualizza</span>
